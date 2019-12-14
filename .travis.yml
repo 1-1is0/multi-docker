@@ -1,0 +1,34 @@
+sudo: required
+os: linux
+language: node_js
+services:
+  - docker
+before_install:
+  - docker build -t amirftma/complex -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true amirftma/complex npm run test
+
+
+after_success:
+  - docker build -t amirftma/multi-client ./client
+  - docker build -t amirftma/multi-nginx ./nginx
+  - docker build -t amirftma/multi-server ./server
+  - docker build -t amirftma/multi-worker ./worker
+  # Log in to the Docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  - docker push amirftma/multi-client
+  - docker push amirftma/multi-nginx
+  - docker push amirftma/multi-server
+  - docker push amirftma/multi-worker
+# deploy:
+#   provider: elasticbeanstalk
+#   region: "us-west-2"
+#   app: "docker"
+#   env: "Docker-env"
+#   bucket_name: "s3 name"
+#   bucket_path: "docker"
+#   on:
+#     branch: master
+#   # api key and secret
+#   # :)
