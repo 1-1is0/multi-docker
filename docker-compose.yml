@@ -1,0 +1,53 @@
+version: '3'
+services: 
+  # for persistent data
+  postgres:
+    image: 'postgres:latest'
+  # for in memory storge
+  redis:
+    image: 'redis:latest'
+  # nginx to handel all the network behnid it and only expose one port 
+  # to oustside world
+  nginx:
+    restart: always
+    build:
+      dockerfile: 'Dockerfile.dev'
+      context: './nginx'
+    ports: 
+      - '3050:80'
+  # this app serve as api to handel all the data and databases
+  api:
+    build:
+      dockerfile: 'Dockerfile.dev'
+      context: './server'
+    volumes:
+      - '/app/node_modules'
+      - './server:/app'
+    # needed to open connection to reddis and postgres
+    environment: 
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PGUSER=postgres
+      - PGHOST=postgres
+      - PGDATABASE=postgres
+      - PGPASSWORD=postgress_password
+      - PGPORT=5432
+  # handle all the frontend to show data to the user, it's a react app
+  client:
+    build:
+      dockerfile: 'Dockerfile.dev'
+      context: './client'
+    volumes:
+      - '/app/node_modules'
+      - './client:/app'
+  # handel the calculation and talk directly to Redis
+  worker:
+    build:
+      dockerfile: 'Dockerfile.dev'
+      context: './worker'
+    volumes:
+      - '/app/node_modules'
+      - './worker:/app'
+    environment: 
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
